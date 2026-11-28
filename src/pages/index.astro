@@ -2,28 +2,110 @@
 import { getCollection } from "astro:content";
 import Layout from "../layouts/Layout.astro";
 
-const projects = (await getCollection("projects")).sort(
-  (a, b) => b.data.publishedAt.getTime() - a.data.publishedAt.getTime()
-);
-
 const base = import.meta.env.BASE_URL.endsWith("/")
   ? import.meta.env.BASE_URL
   : `${import.meta.env.BASE_URL}/`;
+
+const projects = (await getCollection("projects", ({ data }) => !data.draft)).sort(
+  (a, b) => {
+    if (a.data.featured !== b.data.featured) {
+      return a.data.featured ? -1 : 1;
+    }
+    return b.data.publishedAt.getTime() - a.data.publishedAt.getTime();
+  }
+);
 ---
 
-<Layout title="Projects">
-  <main>
-    <h1>Projects</h1>
-    <ul>
+<Layout>
+  <main class="container">
+    <header class="site-header">
+      <h1>Projects</h1>
+      <p>Engineering notes, builds, and shipped tools.</p>
+    </header>
+
+    <ul class="project-list">
       {projects.map((project) => (
-        <li>
-          <a href={`${base}projects/${project.id}/`}>
-            <strong>{project.data.title}</strong>
-          </a>
-          <p>{project.data.summary}</p>
-          <small>Status: {project.data.status}</small>
+        <li class="project-card">
+          <div class="card-top">
+            <a href={`${base}projects/${project.id}/`}>
+              <strong>{project.data.title}</strong>
+            </a>
+            <span class="badge">{project.data.status}</span>
+            {project.data.featured && <span class="badge featured">featured</span>}
+          </div>
+          <p class="summary">{project.data.summary}</p>
+          {project.data.tags.length > 0 && (
+            <div class="tags">
+              {project.data.tags.map((tag) => (
+                <span class="tag">{tag}</span>
+              ))}
+            </div>
+          )}
         </li>
       ))}
     </ul>
   </main>
 </Layout>
+
+<style>
+  .container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 2.5rem 1.25rem;
+    font-family: system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+  }
+  .site-header {
+    margin-bottom: 2rem;
+  }
+  .project-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+  }
+  .project-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.1rem 1.25rem;
+  }
+  .card-top {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .card-top a {
+    font-size: 1.15rem;
+    text-decoration: none;
+  }
+  .card-top a:hover {
+    text-decoration: underline;
+  }
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: #f1f5f9;
+  }
+  .badge.featured {
+    background: #fef3c7;
+  }
+  .summary {
+    margin: 0.5rem 0;
+    color: #334155;
+  }
+  .tags {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-size: 0.75rem;
+    color: #475569;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 0.1rem 0.45rem;
+  }
+</style>

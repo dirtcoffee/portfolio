@@ -3,20 +3,85 @@ import { getCollection, render } from "astro:content";
 import Layout from "../../layouts/Layout.astro";
 
 export async function getStaticPaths() {
-  const projects = await getCollection("projects");
+  const projects = await getCollection("projects", ({ data }) => !data.draft);
   return projects.map((project) => ({
     params: { slug: project.id },
     props: { project },
   }));
 }
 
+const base = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+
 const { project } = Astro.props;
 const { Content } = await render(project);
 ---
 
-<article>
-  <h1>{project.data.title}</h1>
-  <p>{project.data.summary}</p>
-  <p>Status: {project.data.status}</p>
-  <Content />
-</article>
+<Layout>
+  <main class="post">
+    <a class="back-link" href={base}>&larr; Back to Projects</a>
+    <header class="post-header">
+      <h1>{project.data.title}</h1>
+      <p class="summary">{project.data.summary}</p>
+      <div class="meta">
+        <span>Status: <strong>{project.data.status}</strong></span>
+        <span>Published: {project.data.publishedAt.toISOString().slice(0, 10)}</span>
+        {project.data.repoUrl && (
+          <a href={project.data.repoUrl} target="_blank" rel="noreferrer">Repository</a>
+        )}
+        {project.data.liveUrl && (
+          <a href={project.data.liveUrl} target="_blank" rel="noreferrer">Live Demo</a>
+        )}
+      </div>
+    </header>
+
+    <article class="prose">
+      <Content />
+    </article>
+  </main>
+</Layout>
+
+<style>
+  .post {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 2.5rem 1.25rem;
+    font-family: system-ui, -apple-system, sans-serif;
+    line-height: 1.65;
+  }
+  .back-link {
+    display: inline-block;
+    margin-bottom: 1.25rem;
+    text-decoration: none;
+  }
+  .post-header {
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.75rem;
+  }
+  .summary {
+    color: #475569;
+    font-size: 1.05rem;
+  }
+  .meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+    color: #475569;
+  }
+  .prose :global(pre) {
+    padding: 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    background: #0f172a;
+    color: #f8fafc;
+  }
+  .prose :global(blockquote) {
+    margin: 1rem 0;
+    padding-left: 1rem;
+    border-left: 3px solid #94a3b8;
+    color: #475569;
+  }
+</style>
